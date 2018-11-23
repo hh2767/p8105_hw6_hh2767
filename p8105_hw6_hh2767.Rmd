@@ -9,6 +9,8 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(rvest)
+library(httr)
 knitr::opts_chunk$set(
   collapse = TRUE,
   fig.width = 8,
@@ -16,5 +18,94 @@ knitr::opts_chunk$set(
   out.width = "90%"
 )
 theme_set(theme_bw() + theme(legend.position = "bottom"))
+```
+
+#Problem 1
+
+##Read and describe the dataset
+
+```{r}
+
+homicide = GET("https://raw.githubusercontent.com/washingtonpost/data-homicides/master/homicide-data.csv") %>% 
+  content("raw") %>% 
+  read_csv()
+
+str(homicide)
+  
+```
+
+The raw dataset contains `r ncol(homicide)` variables and `r nrow(homicide)` observations. It contains information about `r nrow(homicide)` homicides occured in the US. The variables in this dataset are:
+
+* uid: homicide id
+* reported_date: reported date
+* victim_last: last name of victim
+* victim_first: first name of victim
+* victim_race: race of victim
+* victim_age: age of victim
+* victim_sex: sex of victim
+* city: city of the homicides
+* state: state of the homicides
+* lat: occurrence latitude
+* lon: occurence longitude
+* disposition: result of investigation
+
+The location, time, and information of victims of each homicide are included in the dataset. The dataset also indicates whether the homicides are solved or not.
+
+##Adding variables and tidying the dataset
+
+In the following part, I will:
+
+* create a sity_state variable which show the city and state of occurence
+
+* add a binary variable indicating whether the homicide is solved
+
+* omit cities Dallas, TX; Phoenix, AZ; Kansas City, MO; and Tulsa, AL 
+
+* modifiy victim_race to have categories white and non-white, with white as the reference category
+
+* change victim_age to numeric variable
+
+```{r}
+homicide = homicide %>% 
+  mutate(city_state = str_c(city, ",", state),
+         resolved = as.numeric(disposition == "Closed by arrest"),
+         victim_race = as.factor(ifelse(victim_race == "White", "white", "non-white")),
+         victim_race = relevel(victim_race, ref = "white"),
+         victim_age = as.numeric(victim_age)
+         ) %>%
+  filter(!city_state %in% c("Dallas,TX", "Phoenix,AZ", "Kansas City,MO", "Tulsa,AL")) 
+
+str(homicide)
+```
+
+
+```{r}
+baltimore_logistic = 
+  homicide %>% 
+  filter(city == "Baltimore") %>%
+  glm(resolved ~ victim_age + victim_race + victim_sex, data = ., family = binomial())
+
+race_OR = baltimore_logistic %>% 
+  broom::tidy() %>% 
+  mutate(OR = exp(estimate)) %>% 
+  merge(., 
+        exp(confint(baltimore_logistic)) %>% broom::tidy(), 
+        by.x = "term", by.y = ".rownames") %>% 
+  filter(term == "victim_racenon-white") %>% 
+  mutate(city = "Baltimore, MD") %>% 
+  select(city, OR, CI_lower = X2.5.., CI_upper = X97.5..) 
+
+
+baltimore_race_OR = baltimore_logistic %>% 
+  broom::tidy() %>% 
+  mutate(OR = exp(estimate)) %>% 
+  cbind(., 
+        exp(baltimore_logistic %>% 
+  broom::confint_tidy())) %>% 
+  filter(term == "victim_racenon-white") %>% 
+  mutate(city = "Baltimore, MD") %>% 
+  select(city, OR, conf.low, conf.high) 
+
+
 ```
 
