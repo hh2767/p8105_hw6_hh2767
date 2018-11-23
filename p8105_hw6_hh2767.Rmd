@@ -78,22 +78,23 @@ homicide = homicide %>%
 str(homicide)
 ```
 
+##Logistic regression for Baltimore
+
+In this part, I will:
+
+* Focus on the city of Baltimore, MD
+
+* use the glm function to fit a logistic regression with resolved vs unresolved as the outcome and victim age, sex and race (as just defined) as predictors
+
+* save the output of glm as an R object
+
+* apply the broom::tidy to this object; and obtain the estimate and confidence interval of the adjusted odds ratio for solving homicides comparing non-white victims to white victims keeping all other variables fixed
 
 ```{r}
 baltimore_logistic = 
   homicide %>% 
   filter(city == "Baltimore") %>%
   glm(resolved ~ victim_age + victim_race + victim_sex, data = ., family = binomial())
-
-race_OR = baltimore_logistic %>% 
-  broom::tidy() %>% 
-  mutate(OR = exp(estimate)) %>% 
-  merge(., 
-        exp(confint(baltimore_logistic)) %>% broom::tidy(), 
-        by.x = "term", by.y = ".rownames") %>% 
-  filter(term == "victim_racenon-white") %>% 
-  mutate(city = "Baltimore, MD") %>% 
-  select(city, OR, CI_lower = X2.5.., CI_upper = X97.5..) 
 
 
 baltimore_race_OR = baltimore_logistic %>% 
@@ -104,8 +105,59 @@ baltimore_race_OR = baltimore_logistic %>%
   broom::confint_tidy())) %>% 
   filter(term == "victim_racenon-white") %>% 
   mutate(city = "Baltimore, MD") %>% 
-  select(city, OR, conf.low, conf.high) 
+  select(city,term, OR, '95% conf.low' = conf.low, '95% conf.high' = conf.high) 
+
+baltimore_race_OR %>% 
+  knitr::kable(digits = 3)
+```
+
+The table above shows the estimate and confidence interval of the adjusted odds ratio for solving homicides comparing non-white victims to white victims keeping all other variables fixed. The estimated adjusted odds ratio is `r round(baltimore_race_OR$OR, 3)`, which means that the murdered non-white people have `r round(baltimore_race_OR$OR, 3)` times the odds of having the homicide solved when compared with white people. The 95% confidence interval for the adjusted OR is [`r round(baltimore_race_OR$'95% conf.low', 3)`, `r round(baltimore_race_OR$'95% conf.high', 3)`] 
+
+##Apply the process described above to each city
+
+In this part, I will:
+
+* build a function to run glm for each of the cities in the dataset
+
+* extract the adjusted odds ratio (and CI) for solving homicides comparing non-white victims to white victims
+
+* making use of purrr::map, list columns, and unnest
+
+```{r}
+get_or_race = function(city_data){
+  
+  city_logistic = 
+  city_data %>% 
+  glm(resolved ~ victim_age + victim_race + victim_sex, data = ., family = binomial())
+
+  city_race_OR = city_logistic %>% 
+  broom::tidy() %>% 
+  mutate(OR = exp(estimate)) %>% 
+  cbind(., 
+        exp(city_logistic %>% 
+  broom::confint_tidy())) %>% 
+  filter(term == "victim_racenon-white") %>% 
+  select(`adjusted OR for solving homicides` = OR, '95% conf.low' = conf.low, '95% conf.high' = conf.high) 
+  
+  round(city_race_OR, 3)
+}
 
 
+homicide_race_or = homicide %>% 
+  filter(victim_sex != "Unknown") %>% 
+  select(city_state, victim_age, victim_race, victim_sex, resolved) %>% 
+  group_by(city_state) %>% 
+  nest() %>% 
+  mutate(or_race = map(data, ~get_or_race(.x))) %>% 
+  select(-data) %>% 
+  unnest()
+
+homicide_race_or %>% 
+  mutate(city_state = forcats::fct_reorder(city_state, `adjusted OR for solving homicides`)) %>% 
+  ggplot(.) +
+  geom_point(aes(x = city_state, y =  `adjusted OR for solving homicides`), color = "brown1") +
+  geom_errorbar( aes(x = city_state, ymin = `95% conf.low`, ymax = `95% conf.high`)) +
+  labs(title = "Adjusted OR of solving homicides(effect of race)", x = "City", y = "Adjusted OR of solving homicides") +
+  theme(axis.text.x = element_text(face = "plain", color = "black", size = 6.5, angle = 90), legend.position = "null")
 ```
 
