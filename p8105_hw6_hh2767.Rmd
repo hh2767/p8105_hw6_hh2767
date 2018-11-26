@@ -11,6 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(rvest)
 library(httr)
+library(mgcv)
+library(modelr)
+
 knitr::opts_chunk$set(
   collapse = TRUE,
   fig.width = 8,
@@ -241,7 +244,7 @@ Now, the dataset we get is a `r nrow(birthweight_model)` (observation) * `r ncol
 ```{r}
 birthweight_model %>% 
   ggplot(aes(x = bwt)) + 
-  geom_histogram() + 
+  geom_histogram(fill = "navy") + 
   labs( x = "Birthweight (grams)")
 ```
   
@@ -302,4 +305,47 @@ As the plot shows, when fitted value is above 2000 grams, which is the most comm
 
 ##Comparing the model with two others
 
+In this part, I will compare the following three models:
 
+1. The model that I established in last section:
+
+birthwtfit_my : `bwt` ~ `babysex` + `bhead` + `blength` + `fincome` +`frace` + `gaweeks` + `mrace` + `ppbmi` + `smoken` + `wtgain`
+
+2. A model using length at birth and gestational age as predictors (main effects only):
+
+birthwtfit_1 : `bwt` ~ `blength` + `gaweeks`
+
+3. A model using head circumference, length, sex, and all interactions (including the three-way interaction) between these:
+
+birthwtfit_2 : `bwt` ~ `babysex` + `blength` + `bhead` + `babysex * blength` + `babysex * bhead` + `blength * bhead` + `babysex * blength * bhead`
+
+```{r}
+  
+cv_bwt =
+    crossv_mc(birthweight_model, 100) %>% 
+    mutate(
+         train = map(train, as_tibble),
+         test = map(test, as_tibble)
+         ) %>% 
+    mutate(
+        birthwtfit_my = map(train, ~lm(bwt ~ babysex + bhead + blength + fincome +frace + gaweeks + mrace + ppbmi + smoken + wtgain, data = .x)),
+        birthwtfit_1 = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)),
+        birthwtfit_2 = map(train, ~lm(bwt ~ babysex + blength + bhead + babysex * blength + babysex * bhead + blength * bhead + babysex * blength * bhead, data = .x))
+        ) %>% 
+    mutate(
+        rmse_birthwtfit_my = map2_dbl(birthwtfit_my, test, ~rmse(model = .x, data = .y)),
+        rmse_birthwtfit_1 = map2_dbl(birthwtfit_1, test, ~rmse(model = .x, data = .y)),
+        rmse_birthwtfit_2 = map2_dbl(birthwtfit_2, test, ~rmse(model = .x, data = .y))
+    )
+
+cv_bwt %>% 
+  select(starts_with("rmse")) %>% 
+  gather(key = model, value = rmse) %>% 
+  mutate(model = str_replace(model, "rmse_", ""),
+         model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse, fill = model)) + 
+    geom_violin() +
+    labs(title = "Violin plots of rmse")
+```
+
+Based on these results, the model I made has the lowest rmse, which means it has the best predictive accuracy among the three. The model `birthwtfit_2` has slightly lower predictive accuracy, and the model`birthwtfit_1` is the least accurate. Therefore, I will go with the model I made.
