@@ -237,11 +237,31 @@ Now, the dataset we get is a `r nrow(birthweight_model)` (observation) * `r ncol
   * `wtgain`: mother's weight gain during pregnancy (pounds)
   
   
-  ##Selecting predictors for the model
+##Selecting predictors for the model
+  
+  First, we check the collinearity between the varibles and drop some of the correlated variables.
   
 ```{r}
 birthweight %>% 
   cor() %>% 
   knitr::kable(digits = 2)
+
 ```
-  
+   
+As the result shows, the correlation between `pnumlbw` and `pnumsga`, and other variables are not computed. That's probably because the values of the two variables are always zero in the dataset. Therefore, the two variables do not provide any information to us, and we exclude them from the dataset.
+
+In addition, two sets of predictors have high correlations:
+
+1. `bhead` and `blength`
+
+2. `delwt` and `ppwt` and `ppbmi`
+
+In the first set, I will keep `bhead` because it has higher correlation with `bwt`. In the second set, I will keep `ppbmi` because it integrates information on `ppwt` and `mheight`. In this case, we can also drop `mheight`because the information is contained in `ppbmi`. 
+
+After searching for some information from the internet, I found there are evidence that presence of malformations of the mother, number of live births prior to this pregnancy of the mother, mother's age at menarche, and mother's age are not closely relevant to baby's weight. Therefore, I will further exclude `malform`, `menarche`, `momage`, and `parity`, and keep the rest of variables in the model.
+
+We call it Model 1.
+
+Model 1:
+
+bet ~ `babysex` + `bhead` + `fincome` + `frace` + `gaweeks` + `mrace` + `ppbmi` + `smoken` + `wtgain`
