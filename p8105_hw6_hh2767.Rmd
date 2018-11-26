@@ -236,6 +236,16 @@ Now, the dataset we get is a `r nrow(birthweight_model)` (observation) * `r ncol
   
   * `wtgain`: mother's weight gain during pregnancy (pounds)
   
+  Next, I will check the distribution of the outcome(birthweight).
+  
+```{r}
+birthweight_model %>% 
+  ggplot(aes(x = bwt)) + 
+  geom_histogram() + 
+  labs( x = "Birthweight (grams)")
+```
+  
+  As the plot shows, birthweight is approximately normally distributed, and we don't need to do transformation on it.
   
 ##Selecting predictors for the model
   
@@ -265,3 +275,31 @@ We call it Model 1.
 Model 1:
 
 bet ~ `babysex` + `bhead` + `fincome` + `frace` + `gaweeks` + `mrace` + `ppbmi` + `smoken` + `wtgain`
+
+##Fitting and describing the model
+
+```{r}
+birthweight_fit1 = lm(bwt ~ babysex + bhead + blength + fincome +frace + gaweeks + mrace + ppbmi + smoken + wtgain, data = birthweight_model)
+
+summary(birthweight_fit1) 
+```
+
+The summary of the linear regression model is as above. The adjusted R-square is 0.7133 and that means the model fits well.
+
+```{r}
+birthweight_model %>% 
+  modelr::add_predictions(birthweight_fit1) %>% 
+  modelr::add_residuals(birthweight_fit1) %>% 
+  ggplot(aes(x = pred, y = resid)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) + 
+  labs(title = "Fitted values vs. residuals plot", 
+       x = "Fitted value", 
+       y = "Model residual")
+```
+
+As the plot shows, when fitted value is above 2000 grams, which is the most common range of fitted values, the equal variance assumption of residuals holds true. When fitted value is below 2000 grams, the equal variance assumption seems to be violated, but that's because there are not many data points in that range, and the smooth curve might be driven off by those outliers. Therefore, in general, the plot does not reject the validity of the model.
+
+##Comparing the model with two others
+
+
