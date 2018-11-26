@@ -251,7 +251,7 @@ birthweight_model %>%
   
   First, we check the collinearity between the varibles and drop some of the correlated variables.
   
-```{r}
+```{r warning = FALSE}
 birthweight %>% 
   cor() %>% 
   knitr::kable(digits = 2)
