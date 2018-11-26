@@ -348,4 +348,4 @@ cv_bwt %>%
     labs(title = "Violin plots of rmse")
 ```
 
-Based on these results, the model I made has the lowest rmse, which means it has the best predictive accuracy among the three. The model `birthwtfit_2` has slightly lower predictive accuracy, and the model`birthwtfit_1` is the least accurate. Therefore, I will go with the model I made.
+Based on these results, my model has the lowest rmse, which means it has the best predictive accuracy among the three. The model `birthwtfit_2` has slightly lower predictive accuracy, and the model`birthwtfit_1` is the least accurate. Therefore, I will go with my model.
