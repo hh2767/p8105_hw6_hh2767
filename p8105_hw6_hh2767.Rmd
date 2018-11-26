@@ -180,7 +180,10 @@ homicide_race_or %>%
 ```{r}
 birthweight = GET("http://p8105.com/data/birthweight.csv") %>% 
   content("raw") %>% 
-  read_csv() %>% 
+  read_csv()
+
+birthweight_model = 
+  birthweight %>% 
   mutate(babysex = factor(babysex, levels = c(1, 2), labels = c("male", "female")),
          frace = factor(frace, levels = c(1, 2, 3, 4, 8, 9), labels = c("white", "black", "asian", "puerto tican", "other", "unknown")),
          mrace = factor(mrace, levels = c(1, 2, 3, 4, 8), labels = c("white", "black", "asian", "puerto tican", "other")),
@@ -188,10 +191,10 @@ birthweight = GET("http://p8105.com/data/birthweight.csv") %>%
 
 
 
-str(birthweight)
+str(birthweight_model)
 ```
 
-Now, the dataset we get is a `r nrow(birthweight)` (observation) * `r ncol(birthweight)` (variables) dataset, the variables are:
+Now, the dataset we get is a `r nrow(birthweight_model)` (observation) * `r ncol(birthweight_model)` (variables) dataset, the variables are:
   
   * `babysex`: baby's sex (male, female)
   
@@ -233,4 +236,12 @@ Now, the dataset we get is a `r nrow(birthweight)` (observation) * `r ncol(birth
   
   * `wtgain`: mother's weight gain during pregnancy (pounds)
   
+  
+  ##Selecting predictors for the model
+  
+```{r}
+birthweight %>% 
+  cor() %>% 
+  knitr::kable(digits = 2)
+```
   
