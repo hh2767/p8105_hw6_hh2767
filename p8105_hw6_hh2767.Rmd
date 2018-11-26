@@ -36,18 +36,18 @@ str(homicide)
 
 The raw dataset contains `r ncol(homicide)` variables and `r nrow(homicide)` observations. It contains information about `r nrow(homicide)` homicides occured in the US. The variables in this dataset are:
 
-* uid: homicide id
-* reported_date: reported date
-* victim_last: last name of victim
-* victim_first: first name of victim
-* victim_race: race of victim
-* victim_age: age of victim
-* victim_sex: sex of victim
-* city: city of the homicides
-* state: state of the homicides
-* lat: occurrence latitude
-* lon: occurence longitude
-* disposition: result of investigation
+* `uid`: homicide id
+* `reported_date`: reported date
+* `victim_last`: last name of victim
+* `victim_first`: first name of victim
+* `victim_race`: race of victim
+* `victim_age`: age of victim
+* `victim_sex`: sex of victim
+* `city`: city of the homicides
+* `state`: state of the homicides
+* `lat`: occurrence latitude
+* `lon`: occurence longitude
+* `disposition`: result of investigation
 
 The location, time, and information of victims of each homicide are included in the dataset. The dataset also indicates whether the homicides are solved or not.
 
@@ -55,15 +55,15 @@ The location, time, and information of victims of each homicide are included in 
 
 In the following part, I will:
 
-* create a sity_state variable which show the city and state of occurence
+* create a `sity_state` variable which show the city and state of occurence
 
 * add a binary variable indicating whether the homicide is solved
 
 * omit cities Dallas, TX; Phoenix, AZ; Kansas City, MO; and Tulsa, AL 
 
-* modifiy victim_race to have categories white and non-white, with white as the reference category
+* modifiy `victim_race` to have categories white and non-white, with white as the reference category
 
-* change victim_age to numeric variable
+* change `victim_age` to numeric variable
 
 ```{r}
 homicide = homicide %>% 
@@ -88,7 +88,7 @@ In this part, I will:
 
 * save the output of glm as an R object
 
-* apply the broom::tidy to this object; and obtain the estimate and confidence interval of the adjusted odds ratio for solving homicides comparing non-white victims to white victims keeping all other variables fixed
+* apply the `broom::tidy` to this object; and obtain the estimate and confidence interval of the adjusted odds ratio for solving homicides comparing non-white victims to white victims keeping all other variables fixed
 
 ```{r}
 baltimore_logistic = 
@@ -152,12 +152,63 @@ homicide_race_or = homicide %>%
   select(-data) %>% 
   unnest()
 
+str(homicide_race_or)
+
+```
+
+The data frame `homicide_race_or` contains estimated ORs and CIs for each city.
+
+##Making a plot to show the estimated ORs and CIs
+
+Next, I will make a plot to show the estimated ORs and CIs for each city
+
+```{r}
+
 homicide_race_or %>% 
   mutate(city_state = forcats::fct_reorder(city_state, `adjusted OR for solving homicides`)) %>% 
   ggplot(.) +
   geom_point(aes(x = city_state, y =  `adjusted OR for solving homicides`), color = "brown1") +
   geom_errorbar( aes(x = city_state, ymin = `95% conf.low`, ymax = `95% conf.high`)) +
-  labs(title = "Adjusted OR of solving homicides(effect of race)", x = "City", y = "Adjusted OR of solving homicides") +
+  labs(title = "Adjusted OR of solving homicides(comparing white with non-white people)", x = "City", y = "Adjusted OR of solving homicides") +
   theme(axis.text.x = element_text(face = "plain", color = "black", size = 6.5, angle = 90), legend.position = "null")
 ```
 
+#Problem2
+
+##Loading and cleaning the data
+
+```{r}
+birthweight = GET("http://p8105.com/data/birthweight.csv") %>% 
+  content("raw") %>% 
+  read_csv() %>% 
+  mutate(babysex = factor(babysex, levels = c(1, 2), labels = c("male", "female")),
+         frace = factor(frace, levels = c(1, 2, 3, 4, 8, 9), labels = c("white", "black", "asian", "puerto tican", "other", "unknown")),
+         mrace = factor(mrace, levels = c(1, 2, 3, 4, 8), labels = c("white", "black", "asian", "puerto tican", "other")),
+         malform = factor(malform, labels = c("absent", "present")))
+
+
+
+str(birthweight)
+```
+
+Now, the dataset we get is
+* `babysex`: baby's sex (male, female)
+  * `bhead`: baby's head circumference at birth (centimeters)
+  * `blength`: baby's length at birth (centimeteres)
+  * `bwt`: baby's birth weight (grams)
+  * `delwt`: mother's weight at delivery (pounds)
+  * `fincome`: family monthly income (in hundreds, rounded)
+  * `frace`: father's race (White, Black, Asian, Puerto Rican, Other, Unknown)
+  * `gaweeks`: gestational age in weeks
+  * `malform`: presence of malformations that could affect weight (absent, present)
+  * `menarche`: mother's age at menarche (years)
+  * `mheigth`: mother's height (inches) 
+  * `momage`: mother's age at delivery (years)
+  * `mrace`: mother's race (White, Black, Asian, Puerto Rican, Other)
+  * `parity`: number of live births prior to this pregnancy
+  * `pnumlbw`: previous number of low birth weight babies 
+  * `pnumgsa`: number of prior small for gestational age babies
+  * `ppbmi`: mother's pre-pregnancy BMI
+  * `ppwt`: mother's pre-pregnancy weight (pounds)
+  * `smoken`: average number of cigarettes smoked per day during pregnancy
+  * `wtgain`: mother's weight gain during pregnancy (pounds)
