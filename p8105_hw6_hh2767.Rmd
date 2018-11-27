@@ -58,7 +58,7 @@ The location, time, and information of victims of each homicide are included in 
 
 In the following part, I will:
 
-* create a `sity_state` variable which show the city and state of occurence
+* create a `sity_state` variable which shows the city and state of occurence
 
 * add a binary variable indicating whether the homicide is solved
 
