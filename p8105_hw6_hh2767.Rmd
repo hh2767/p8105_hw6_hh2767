@@ -68,7 +68,7 @@ In the following part, I will:
 
 * change `victim_age` to numeric variable
 
-```{r}
+```{r warning = FALSE}
 homicide = homicide %>% 
   mutate(city_state = str_c(city, ",", state),
          resolved = as.numeric(disposition == "Closed by arrest"),
